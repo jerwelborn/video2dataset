@@ -182,7 +182,7 @@ class InputSharder:
                 "Downloading starting now, check your bandwidth speed (with bwm-ng)"
                 "your cpu (with htop), and your disk usage (with iotop)!"
             )
-
+            print(f"{shards=}")
             for shard_id, arrow_file in shards:
                 yield (
                     arrow_file,

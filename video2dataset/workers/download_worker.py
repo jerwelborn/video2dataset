@@ -158,7 +158,9 @@ class DownloadWorker:
         if self.subsamplers["audio"]:
             writer_encode_formats["audio"] = self.subsamplers["audio"][0].encode_formats["audio"]
         if self.subsamplers["video"]:
-            writer_encode_formats["video"] = self.subsamplers["video"][0].encode_formats["video"]
+            # writer_encode_formats["video"] = self.subsamplers["video"][0].encode_formats["video"]
+            # Weird/inconsistent assumption about subsampler ordering & shape of "encode_format". Hardcode here:
+            writer_encode_formats["video"] = "mp4"
 
         # give schema to writer
         sample_writer = self.sample_writer_class(

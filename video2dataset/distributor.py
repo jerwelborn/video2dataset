@@ -137,6 +137,7 @@ class SlurmShardSampler:
             for full_shard_id, shard_id in shardfile_list
             if int(full_shard_id) % self.num_tasks == self.task_id
         ]
+        print(f"Rank {self.task_id} assigned {len(shardlist)} / {len(shardfile_list)} shards.")
         return shardlist
 
 

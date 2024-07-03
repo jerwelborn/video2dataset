@@ -1,4 +1,5 @@
 """Create dataset from video links and metadata."""
+import multiprocessing
 import os
 import sys
 import signal
@@ -55,6 +56,7 @@ def video2dataset(
     max_shard_retry: int = 1,
     tmp_dir: str = "/tmp",
     config: Any = "default",
+    num_samples_per_shard: str = "",
 ):
     """
     Create datasets from video/audio links
@@ -97,6 +99,7 @@ def video2dataset(
     max_shard_retry: Maximum amount of attempts to retry a failed shard
     tmp_dir: Path to temporary directory on your file system
     config: Path to your config of choice or the config itself (more info on configs in API doc)
+    num_samples_per_shard: optionally override shard size with string value from environment variable.
     """
     local_args = dict(locals())
     if isinstance(config, str):
@@ -107,6 +110,9 @@ def video2dataset(
 
     if config["reading"]["sampler"] is None:
         config["reading"]["sampler"] = identity
+
+    if num_samples_per_shard != "":
+        config["storage"]["number_sample_per_shard"] = int(num_samples_per_shard)
 
     called_from_slurm = "CALLED_FROM_SLURM" in os.environ
     if called_from_slurm:
@@ -120,6 +126,16 @@ def video2dataset(
 
         # Only log from master
         enable_wandb = enable_wandb and (global_task_id == 0)
+
+    called_from_sky = "SKYPILOT_NODE_RANK" in os.environ and "SKYPILOT_NUM_NODES" in os.environ
+    if called_from_sky:
+        rank = int(os.environ["SKYPILOT_NODE_RANK"])
+        world_size = int(os.environ["SKYPILOT_NUM_NODES"])
+        print(f"{rank=} {world_size=}")
+        config["reading"]["sampler"] = SlurmShardSampler(global_task_id=rank, num_tasks=world_size)
+        config["distribution"]["distributor"] = "multiprocessing"
+        config["distribution"]["processes_count"] = multiprocessing.cpu_count()
+        enable_wandb = enable_wandb and (rank == 0)
 
     # TODO: find better location for this code
     # TODO: figure out minimum yt_meta_args for subtitles to be added to metadata
