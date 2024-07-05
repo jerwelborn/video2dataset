@@ -7,7 +7,7 @@ reading:
     yt_args:
         download_size: 360
         yt_metadata_args:
-            get_info: False
+            get_info: True
     timeout: 60
     sampler: null
 
