@@ -57,6 +57,7 @@ def video2dataset(
     tmp_dir: str = "/tmp",
     config: Any = "default",
     num_samples_per_shard: str = "",
+    num_workers_ratio: float = 1.0,
 ):
     """
     Create datasets from video/audio links
@@ -100,6 +101,7 @@ def video2dataset(
     tmp_dir: Path to temporary directory on your file system
     config: Path to your config of choice or the config itself (more info on configs in API doc)
     num_samples_per_shard: optionally override shard size with string value from environment variable.
+    num_workers_ratio: number of workers (eg processes) as a fraction of cpu cores per node. defaults to 1.0.
     """
     local_args = dict(locals())
     if isinstance(config, str):
@@ -134,8 +136,9 @@ def video2dataset(
         print(f"{rank=} {world_size=}")
         config["reading"]["sampler"] = SlurmShardSampler(global_task_id=rank, num_tasks=world_size)
         config["distribution"]["distributor"] = "multiprocessing"
-        config["distribution"]["processes_count"] = multiprocessing.cpu_count()
         enable_wandb = enable_wandb and (rank == 0)
+
+    config["distribution"]["processes_count"] = int(multiprocessing.cpu_count() * num_workers_ratio)
 
     # TODO: find better location for this code
     # TODO: figure out minimum yt_meta_args for subtitles to be added to metadata
